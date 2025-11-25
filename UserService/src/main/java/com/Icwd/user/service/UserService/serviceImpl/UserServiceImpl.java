@@ -1,0 +1,83 @@
+package com.Icwd.user.service.UserService.serviceImpl;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.Icwd.user.service.UserService.entities.Hotel;
+import com.Icwd.user.service.UserService.entities.Rating;
+import com.Icwd.user.service.UserService.entities.User;
+import com.Icwd.user.service.UserService.exceptions.ResourceNotFoundException;
+import com.Icwd.user.service.UserService.repositories.UserRepository;
+import com.Icwd.user.service.UserService.service.UserService;
+
+@Service
+public class UserServiceImpl implements UserService{
+
+	@Autowired
+	private UserRepository userRepository;
+	
+	@Autowired
+	private RestTemplate restTemplate;
+	//to autowire this resttemplate we need a bean of it
+	//declare its bean in UserServiceApplication.java which is main class or create separate config class
+	
+	@Override
+	public User saveUser(User user) {
+		// It generates unique userId
+		String randomUserId = UUID.randomUUID().toString();
+		user.setUserId(randomUserId);
+		return userRepository.save(user);
+	}
+
+	@Override
+	public List<User> getAllUser() {
+		return userRepository.findAll();
+	}
+
+	@Override
+	public User getUser(String userId) {
+		//get user from database with the help of user repository
+		User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User with given id is not found on server !! : "+userId));
+		//fetch rating of the above user from RATING SERVICE
+		//now we have to call rating service to fetch rating, so RATING service should have API/method from where we can fetch rating of user API/method - getRatingByUserId
+		//http://localhost:8083/ratings/users/2419b3a1-dd43-47c5-b9d1-bc2f563cfa23
+		//when one service calls another service it does with the help of some client http client USER SERVICE should have a client for contact
+		//options REST Template or FEIGN CLIENT(Like bus or train or flight for travel options)
+		
+		//restTemplate.getForObject(...)→ Makes an HTTP GET request to another microservice.
+		//getForObject - Makes an HTTP GET request and directly returns the response body as a Java object.
+		//The response (JSON array) is converted into a Java ArrayList using:ArrayList.class
+		//ArrayList<Rating> ratingsOfUser = restTemplate.getForObject("http://localhost:8083/ratings/users/"+user.getUserId(), ArrayList.class);
+		
+		//This is hard coded with host and port static
+		//Rating[] ratingsOfUser = restTemplate.getForObject("http://localhost:8083/ratings/users/"+user.getUserId(), Rating[].class);
+		
+		//Below is dynamic url - using name registered in serviceregistry
+		Rating[] ratingsOfUser = restTemplate.getForObject("http://RATINGSERVICE/ratings/users/"+user.getUserId(), Rating[].class);
+		
+		List<Rating> ratings = Arrays.stream(ratingsOfUser).toList();
+		
+		List<Rating> ratingList = ratings.stream().map(rating -> {
+			//api call to hotel service to get the hotel
+			//getForEntity - Makes a GET request and returns full ResponseEntity, not just body.
+			ResponseEntity<Hotel> forEntity = restTemplate.getForEntity("http://HOTELSERVICE/hotels/"+rating.getHotelId(), Hotel.class);
+			Hotel hotel = forEntity.getBody();
+			
+			rating.setHotel(hotel);
+			//set the hotel to rating
+			return rating;
+			}).collect(Collectors.toList());
+		
+		user.setRatings(ratingList);
+		return user;
+	}
+
+}

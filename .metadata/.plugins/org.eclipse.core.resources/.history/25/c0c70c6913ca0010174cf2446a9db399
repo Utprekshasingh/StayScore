@@ -1,0 +1,20 @@
+spring.application.name=APIGateway
+server.port=8084
+
+# ------------------ USER SERVICE ------------------
+spring.cloud.gateway.routes[0].id=userservice
+spring.cloud.gateway.routes[0].uri=lb://USERSERVICE
+spring.cloud.gateway.routes[0].predicates[0]=Path=/users/**
+
+# ------------------ RATING SERVICE ------------------
+spring.cloud.gateway.routes[1].id=ratingservice
+spring.cloud.gateway.routes[1].uri=lb://RATINGSERVICE
+spring.cloud.gateway.routes[1].predicates[0]=Path=/ratings/**
+
+# ------------------ HOTEL SERVICE ------------------
+spring.cloud.gateway.routes[2].id=hotelservice
+spring.cloud.gateway.routes[2].uri=lb://HOTELSERVICE
+spring.cloud.gateway.routes[2].predicates[0]=Path=/hotels/**
+
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true

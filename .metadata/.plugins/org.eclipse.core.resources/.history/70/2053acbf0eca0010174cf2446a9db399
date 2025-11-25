@@ -1,0 +1,5 @@
+spring.application.name=APIGateway
+
+spring.cloud.gateway.routes[0].id=userservice
+spring.cloud.gateway.routes[0].uri=lb://USERSERVICE
+spring.cloud.gateway.routes[0].predicates[0]=Path=/users/**

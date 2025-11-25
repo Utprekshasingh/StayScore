@@ -1,0 +1,9 @@
+package com.Icwd.user.service.UserService.entities;
+
+public class Hotel {
+
+	private String hotelId;
+	private String hotelName;
+	private String location;
+	private String about;
+}
